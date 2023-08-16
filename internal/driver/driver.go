@@ -6,7 +6,6 @@
 
 // Package driver this package provides an GPIO implementation of
 // ProtocolDriver interface.
-//
 package driver
 
 import (
@@ -21,16 +20,18 @@ import (
 )
 
 type Driver struct {
-	lc            logger.LoggingClient
-	asyncCh       chan<- *sdkModels.AsyncValues
+	lc      logger.LoggingClient
+	asyncCh chan<- *sdkModels.AsyncValues
 
-	cmdResp string
-	parseSetupPayloadResp string
-	commissionIntoWiFiOverBTResp string
-	commissionWithQRCodeTResp string
-	removeFromFabricResp string
-	cluster_On_Off_Toggle_Resp string
-	cluster_Read_On_Off_Resp string
+	cmdResp                                       string
+	parseSetupPayloadResp                         string
+	commissionIntoWiFiOverBTResp                  string
+	commissionWithQRCodeTResp                     string
+	removeFromFabricResp                          string
+	cluster_On_Off_Toggle_Resp                    string
+	cluster_Read_On_Off_Resp                      string
+	cluster_Read_Temperature_Measured_Value       string
+	cluster_Read_Relative_Humidity_Measured_Value string
 }
 
 // Initialize performs protocol-specific initialization for the device
@@ -77,7 +78,15 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 			// Cluster_On_Off_Toggle
 			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeString, s.cluster_On_Off_Toggle_Resp)
 			res[0] = cv
-		} 
+		} else if reqs[0].DeviceResourceName == "node_id" && reqs[1].DeviceResourceName == "endpoint_id" && reqs[2].DeviceResourceName == "temperature_measurement" {
+			// Cluster_Temperature_Read_Measurement
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeString, s.cluster_Read_Temperature_Measured_Value)
+			res[0] = cv
+		} else if reqs[0].DeviceResourceName == "node_id" && reqs[1].DeviceResourceName == "endpoint_id" && reqs[2].DeviceResourceName == "relativehumidity_measurement" {
+			// Relative_Humidity_Read_Measurement
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeString, s.cluster_Read_Relative_Humidity_Measured_Value)
+			res[0] = cv
+		}
 	} else if len(reqs) == 5 {
 		if reqs[0].DeviceResourceName == "node_id" && reqs[1].DeviceResourceName == "ssid" && reqs[2].DeviceResourceName == "password" {
 			// CommissionIntoWiFiOverBT
@@ -99,7 +108,7 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 	var err error
 
 	if len(reqs) == 1 {
-		if	reqs[0].DeviceResourceName == "cmdParams" {
+		if reqs[0].DeviceResourceName == "cmdParams" {
 			var cmdParamsValue []string
 			if cmdParamsValue, err = params[0].StringArrayValue(); err != nil {
 				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
@@ -170,6 +179,44 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 				return err
 			}
 			err = s.chipToolCluster_On_Off_Toggle(node_id, endpoint_id, on_off_toggle)
+		} else if reqs[0].DeviceResourceName == "node_id" && reqs[1].DeviceResourceName == "endpoint_id" && reqs[2].DeviceResourceName == "temperature_measurement" {
+			// Temperature_Measurement
+			var node_id string
+			var endpoint_id string
+			var temperature_measurement string
+			if node_id, err = params[0].StringValue(); err != nil {
+				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
+				return err
+			}
+			if endpoint_id, err = params[1].StringValue(); err != nil {
+				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
+				return err
+			}
+			if temperature_measurement, err = params[2].StringValue(); err != nil {
+				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
+				return err
+			}
+			err = s.chipToolCluster_Read_Temperature_Measured_Value(node_id, endpoint_id, temperature_measurement)
+
+		} else if reqs[0].DeviceResourceName == "node_id" && reqs[1].DeviceResourceName == "endpoint_id" && reqs[2].DeviceResourceName == "relativehumidity_measurement" {
+			// Relativehumidity_Measurement
+			var node_id string
+			var endpoint_id string
+			var relative_humidity_measurement string
+			if node_id, err = params[0].StringValue(); err != nil {
+				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
+				return err
+			}
+			if endpoint_id, err = params[1].StringValue(); err != nil {
+				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
+				return err
+			}
+			if relative_humidity_measurement, err = params[2].StringValue(); err != nil {
+				err := fmt.Errorf("Driver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[0].String())
+				return err
+			}
+			err = s.chipToolCluster_Read_Relative_Humidity_Measured_Value(node_id, endpoint_id, relative_humidity_measurement)
+
 		}
 	} else if len(reqs) == 5 {
 		if reqs[0].DeviceResourceName == "node_id" && reqs[1].DeviceResourceName == "ssid" && reqs[2].DeviceResourceName == "password" {

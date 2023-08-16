@@ -1,0 +1,103 @@
+name: "Matter-THSensor-Device"
+manufacturer: "ZJU-ACES"
+model: "SP-01"
+labels:
+- "matter-thsensor"
+description: "Example of Matter Temperature and humidity sensor"
+
+deviceResources:
+-
+  name: "qrcode_payload"
+  isHidden: true
+  description: "the setup QR code payload of the device"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "node_id"
+  isHidden: true
+  description: "the user-defined ID of the node being commissioned"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "endpoint_id"
+  isHidden: true
+  description: "the ID of the endpoint with cluster implemented"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "temperature_measurement"
+  isHidden: true
+  description: "cur/min/max"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "relativehumidity_measurement"
+  isHidden: true
+  description: "cur/min/max"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "ssid"
+  isHidden: true
+  description: "WI-FI ssid"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "password"
+  isHidden: true
+  description: "WI-FI password"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+-
+  name: "timeout"
+  isHidden: true
+  description: "timeout for commission"
+  properties:
+    valueType: "String"
+    readWrite: "RW"
+    units: "s"
+
+deviceCommands:
+  -
+    name: "ParseSetupPayload"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "qrcode_payload"}
+
+  -
+    name: "CommissionWithQRCode"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "node_id"}
+      - { deviceResource: "qrcode_payload" }
+  -
+    name: "RemoveFromFabric"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "node_id"}
+  -
+    name: "Cluster_Read_Temperature_Measured_Value"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "node_id"}
+      - { deviceResource: "endpoint_id", defaultValue: "1"}
+      - { deviceResource: "temperature_measurement", defaultValue: "cur"}
+  -
+    name: "Cluster_Read_Relative_Humidity_Measured_Value"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "node_id"}
+      - { deviceResource: "endpoint_id", defaultValue: "1"}
+      - { deviceResource: "relativehumidity_measurement", defaultValue: "cur"}

@@ -1,0 +1,10 @@
+# Pre-define Devices
+[[DeviceList]]
+  Name = "Matter-THSensor"
+  ProfileName = "Matter-THSensor-Device"
+  Description = "Example of Matter Temperature and humidity sensor"
+  Labels = [ "matter-thsensor" ]
+  [DeviceList.Protocols]
+    [DeviceList.Protocols.other]
+      Address = "device-matter-thsensor"
+      Port = "300"

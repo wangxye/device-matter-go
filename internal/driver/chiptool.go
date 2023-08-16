@@ -6,18 +6,16 @@
 
 // Package driver this package provides an GPIO implementation of
 // ProtocolDriver interface.
-//
 package driver
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
-	"context"
-	"time"
-	"bytes"
 	"strconv"
+	"time"
 )
-
 
 func (s *Driver) chipToolSendCMD(params []string) error {
 
@@ -56,12 +54,11 @@ func (s *Driver) chipToolSendCMD(params []string) error {
 	return nil
 }
 
-
 func (s *Driver) chipToolParseSetupPayload(payload string) error {
 
 	// 要执行的二进制文件和命令行参数
 	executable := "./chip-tool"
-	args := []string{"payload","parse-setup-payload", payload}
+	args := []string{"payload", "parse-setup-payload", payload}
 	fmt.Println("args:", args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -90,12 +87,11 @@ func (s *Driver) chipToolParseSetupPayload(payload string) error {
 	return nil
 }
 
-
 func (s *Driver) chipToolCommissionIntoWiFiOverBT(node_id string, ssid string, password string, payload string, timeout string) error {
 
 	// 要执行的二进制文件和命令行参数
 	executable := "./chip-tool"
-	args := []string{"pairing","code-wifi", node_id, ssid, password, payload, "--paa-trust-store-path", "credentials/production/paa-root-certs/"}
+	args := []string{"pairing", "code-wifi", node_id, ssid, password, payload, "--paa-trust-store-path", "credentials/production/paa-root-certs/"}
 	fmt.Println("args:", args)
 
 	tmp, _ := strconv.Atoi(timeout)
@@ -125,12 +121,11 @@ func (s *Driver) chipToolCommissionIntoWiFiOverBT(node_id string, ssid string, p
 	return nil
 }
 
-
 func (s *Driver) chipToolCommissionWithQRCode(node_id string, payload string) error {
 
 	// 要执行的二进制文件和命令行参数
 	executable := "./chip-tool"
-	args := []string{"pairing","code", node_id, payload}
+	args := []string{"pairing", "code", node_id, payload, "--paa-trust-store-path", "credentials/development/paa-root-certs/"}
 	fmt.Println("args:", args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -163,7 +158,7 @@ func (s *Driver) chipToolUnpair(node_id string) error {
 
 	// 要执行的二进制文件和命令行参数
 	executable := "./chip-tool"
-	args := []string{"pairing","unpair", node_id}
+	args := []string{"pairing", "unpair", node_id}
 	fmt.Println("args:", args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -191,7 +186,6 @@ func (s *Driver) chipToolUnpair(node_id string) error {
 	}
 	return nil
 }
-
 
 func (s *Driver) chipToolCluster_On_Off_Toggle(node_id string, endpoint_id string, on_off_toggle string) error {
 
@@ -241,7 +235,8 @@ func (s *Driver) chipToolCluster_Read_On_Off(node_id string, endpoint_id string)
 
 	// 要执行的二进制文件和命令行参数
 	executable := "./chip-tool"
-	args := []string{"onoff","read", "on-off", node_id, endpoint_id}
+
+	args := []string{"onoff", "read", "on-off", node_id, endpoint_id}
 	fmt.Println("args:", args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -268,6 +263,94 @@ func (s *Driver) chipToolCluster_Read_On_Off(node_id string, endpoint_id string)
 		}
 	} else {
 		s.cluster_Read_On_Off_Resp = "Exec failure"
+		return ctx.Err()
+	}
+	return nil
+}
+
+func (s *Driver) chipToolCluster_Read_Temperature_Measured_Value(node_id string, endpoint_id string, temperature_measurement string) error {
+
+	// 要执行的二进制文件和命令行参数
+	executable := "./chip-tool"
+	var action string = "measured-value"
+	if temperature_measurement == "cur" {
+		action = "measured-value"
+	} else if temperature_measurement == "min" {
+		action = "min-measured-value"
+	} else if temperature_measurement == "max" {
+		action = "max-measured-value"
+	}
+
+	args := []string{"temperaturemeasurement", "read", action, node_id, endpoint_id}
+	fmt.Println("args:", args)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, executable, args...)
+	out, err := cmd.CombinedOutput()
+
+	if ctx.Err() == nil {
+		if err == nil {
+			// 命令能执行，且结果正常
+			cmd2 := exec.Command("grep", "-o", "CHIP:DMG.*")
+			cmd2.Stdin = bytes.NewReader(out)
+			out2, _ := cmd2.Output()
+			cmd3 := exec.Command("grep", "-oE", "Endpoint =.*|Cluster =.*|Attribute =.*|Data =.*")
+			cmd3.Stdin = bytes.NewReader(out2)
+			out3, _ := cmd3.Output()
+			fmt.Println("response:", string(out3))
+			s.cluster_Read_Temperature_Measured_Value = string(out3)
+		} else {
+			// 命令能执行，但结果异常（参数不对等）
+			s.cluster_Read_Temperature_Measured_Value = "Result failure"
+			return err
+		}
+	} else {
+		s.cluster_Read_Temperature_Measured_Value = "Exec failure"
+		return ctx.Err()
+	}
+	return nil
+}
+
+func (s *Driver) chipToolCluster_Read_Relative_Humidity_Measured_Value(node_id string, endpoint_id string, relative_humidity_measurement string) error {
+
+	// 要执行的二进制文件和命令行参数
+	executable := "./chip-tool"
+	var action string = "measured-value"
+	if relative_humidity_measurement == "cur" {
+		action = "measured-value"
+	} else if relative_humidity_measurement == "min" {
+		action = "min-measured-value"
+	} else if relative_humidity_measurement == "max" {
+		action = "max-measured-value"
+	}
+
+	args := []string{"relativehumiditymeasurement", "read", action, node_id, endpoint_id}
+	fmt.Println("args:", args)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, executable, args...)
+	out, err := cmd.CombinedOutput()
+
+	if ctx.Err() == nil {
+		if err == nil {
+			// 命令能执行，且结果正常
+			cmd2 := exec.Command("grep", "-o", "CHIP:DMG.*")
+			cmd2.Stdin = bytes.NewReader(out)
+			out2, _ := cmd2.Output()
+			cmd3 := exec.Command("grep", "-oE", "Endpoint =.*|Cluster =.*|Attribute =.*|Data =.*")
+			cmd3.Stdin = bytes.NewReader(out2)
+			out3, _ := cmd3.Output()
+			fmt.Println("response:", string(out3))
+			s.cluster_Read_Relative_Humidity_Measured_Value = string(out3)
+		} else {
+			// 命令能执行，但结果异常（参数不对等）
+			s.cluster_Read_Relative_Humidity_Measured_Value = "Result failure"
+			return err
+		}
+	} else {
+		s.cluster_Read_Relative_Humidity_Measured_Value = "Exec failure"
 		return ctx.Err()
 	}
 	return nil
